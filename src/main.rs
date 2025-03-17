@@ -42,25 +42,44 @@ fn get_alphabet(input: &String) -> String {
 
 fn main() {
     let matches = Command::new("caesar_cipher")
-        .arg(Arg::new("shift").required(true))
-        .arg(Arg::new("filename").required(true))
-        .arg(Arg::new("decrypt").short('d').action(ArgAction::SetTrue))
-        .arg(Arg::new("alphabet").short('a'))
-        .arg(Arg::new("detect").short('e').action(ArgAction::SetTrue))
+        .arg(
+            Arg::new("shift")
+                .required(true)
+                .value_parser(clap::value_parser!(i32))
+                .help("How many characters to shift"),
+        )
+        .arg(
+            Arg::new("filename")
+                .required(true)
+                .help("Name of the file that is to be processed"),
+        )
+        .arg(
+            Arg::new("decrypt")
+                .short('d')
+                .action(ArgAction::SetTrue)
+                .conflicts_with("detect")
+                .help("If it should decrypt, i.e. shift leftwise instead of rightwise"),
+        )
+        .arg(
+            Arg::new("alphabet")
+                .short('a')
+                .conflicts_with("detect")
+                .help("ISO 639-3 code for an alphabet. Cannot be used in conjunction with language detection (-e)"),
+        )
+        .arg(
+            Arg::new("detect")
+                .short('e')
+                .action(ArgAction::SetTrue)
+                .conflicts_with("alphabet")
+                .conflicts_with("decrypt")
+                .help("Detect which language, and as a consequence which alphabet to use to decipher. Only available for ciphering. Cannot be used in conjunction with the alphabet argument (-a)")
+        )
         .get_matches();
 
-    let shift: i32 = matches
-        .get_one::<String>("shift")
-        .unwrap()
-        .parse()
-        .expect("Shift must be a number");
+    let shift: i32 = *matches.get_one::<i32>("shift").unwrap();
     let filename = matches.get_one::<String>("filename").unwrap();
     let decrypt = matches.get_flag("decrypt");
     let text = fs::read_to_string(filename).expect("Failed to read file");
-
-    if matches.get_one::<String>("alphabet").is_some() && matches.get_flag("detect") {
-        panic!("Cannot detect language if one is provided");
-    }
 
     let alphabet: Option<String>;
     if matches.get_flag("detect") {
